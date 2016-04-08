@@ -77,12 +77,15 @@ namespace DIOSquareTest
             _ft232hdio.Open((uint)_ftdi_dev_index);
             try
             {
-                for (int i = 0; i < 10; i++)
+                this.button2.Enabled = false;
+                for (int i = 0; i < 100; i++)
                 {
                     bool value = _ft232hdio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
-                    value = _ft232hdio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
-                    value = _ft232hdio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
+                    this.radioButton1.Checked = value;
+                    Thread.Sleep(250);
                 }
+                this.button2.Enabled = true;
+
             }
             finally
             {
