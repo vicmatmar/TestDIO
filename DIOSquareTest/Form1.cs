@@ -24,6 +24,8 @@ namespace DIOSquareTest
 
         int _ftdi_dev_index = -1;
 
+        bool _toggle = false;
+
         public Form1()
         {
             InitializeComponent();
@@ -35,63 +37,54 @@ namespace DIOSquareTest
                 throw new Exception("Unable to find an F232H device");
             }
 
+            _ft232hdio.Open((uint)_ftdi_dev_index);
+
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            //byte data = 0x00;
-            //byte[] buffer = new byte[]{0x82, data, 0xFF};
-            //uint n = 0;
-
-            _ft232hdio.Open((uint)_ftdi_dev_index);
-            try
+            bool value = false;
+            for (int i = 0; i < 10; i++)
             {
-                bool value = false;
-                for (int i = 0; i < 10; i++)
+                FTDI.FT_STATUS status = _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN1, value);
+                value = !value;
+
+                //FTDI.FT_STATUS status = _ft232hdio.Write(buffer, 3, ref n);
+                //buffer[1] ^= 0x01;
+
+                if (status != FTDI.FT_STATUS.FT_OK)
                 {
-                    FTDI.FT_STATUS status = _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN1, value);
-                    value = !value;
-
-                    //FTDI.FT_STATUS status = _ft232hdio.Write(buffer, 3, ref n);
-                    //buffer[1] ^= 0x01;
-
-                    if (status != FTDI.FT_STATUS.FT_OK)
-                    {
-                        throw new Exception(string.Format("Bad status after write: {0}", status));
-                    }
-
-                    Thread.Sleep(10);
+                    throw new Exception(string.Format("Bad status after write: {0}", status));
                 }
-            }
-            catch (Exception) { }
-            finally
-            {
 
-                _ft232hdio.Close();
+                Thread.Sleep(10);
             }
 
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            _ft232hdio.Open((uint)_ftdi_dev_index);
-            try
+            this.button2.Enabled = false;
+            for (int i = 0; i < 100; i++)
             {
-                this.button2.Enabled = false;
-                for (int i = 0; i < 100; i++)
-                {
-                    bool value = _ft232hdio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
-                    this.radioButton1.Checked = value;
-                    Thread.Sleep(250);
-                }
-                this.button2.Enabled = true;
-
+                bool value = _ft232hdio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
+                this.radioButton1.Checked = value;
+                Thread.Sleep(250);
             }
-            finally
-            {
+            this.button2.Enabled = true;
 
-                _ft232hdio.Close();
-            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            _toggle = !_toggle;
+            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, _toggle);
+
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _ft232hdio.Close();
 
         }
     }
