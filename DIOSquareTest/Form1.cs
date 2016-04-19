@@ -11,8 +11,9 @@ using System.Windows.Forms;
 using System.Threading;
 
 using FTD2XX_NET;
-
 using DIO;
+
+using FTDIO_Object;
 
 namespace DIOSquareTest
 {
@@ -22,9 +23,13 @@ namespace DIOSquareTest
         DIO.FT232HDIO.DIO_BUS _ftdi_bus = FT232HDIO.DIO_BUS.AC_BUS;
         public string FTDI_BUS { get { return _ftdi_bus.ToString(); } }
 
+        delegate void setCallback();
+
         int _ftdi_dev_index = -1;
 
         bool _toggle = false;
+
+        FTDIO_Object.FTButton ftbutton;
 
         public Form1()
         {
@@ -39,7 +44,45 @@ namespace DIOSquareTest
 
             _ft232hdio.Open((uint)_ftdi_dev_index);
 
+            ftbutton = new FTButton(_ft232hdio, FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
+            ftbutton.Click_Event += ftbutton_Click_Event;
+
         }
+
+        void ftbutton_Click_Event(object sender)
+        {
+            updategui();
+
+            Thread.Sleep(5000);
+            ftbutton.Enabled = true;
+
+            updategui();
+        }
+
+        void updategui()
+        {
+            if (InvokeRequired)
+            {
+                setCallback d = new setCallback(updategui);
+                this.Invoke(d, new object[] { });
+            }
+            else
+            {
+                if (ftbutton.Enabled)
+                {
+                    label1.Text = "Watting on click.\r\nButton is enabled.\r\nLED is on";
+                    _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, true);
+                    radioButton1.Checked = true;
+                }
+                else
+                {
+                    label1.Text = "Something running.\r\nButton is disabled\r\nLED is off";
+                    _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, false);
+                    radioButton1.Checked = false;
+                }
+            }
+        }
+
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -48,34 +91,17 @@ namespace DIOSquareTest
             {
                 FTDI.FT_STATUS status = _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN1, value);
                 value = !value;
-
-                //FTDI.FT_STATUS status = _ft232hdio.Write(buffer, 3, ref n);
-                //buffer[1] ^= 0x01;
-
                 if (status != FTDI.FT_STATUS.FT_OK)
                 {
                     throw new Exception(string.Format("Bad status after write: {0}", status));
                 }
-
                 Thread.Sleep(10);
             }
 
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            this.button2.Enabled = false;
-            for (int i = 0; i < 100; i++)
-            {
-                bool value = _ft232hdio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
-                this.radioButton1.Checked = value;
-                Thread.Sleep(250);
-            }
-            this.button2.Enabled = true;
 
-        }
-
-        private void button3_Click(object sender, EventArgs e)
+        private void toggleLED_Click(object sender, EventArgs e)
         {
             _toggle = !_toggle;
             _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, _toggle);
