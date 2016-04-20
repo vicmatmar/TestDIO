@@ -16,9 +16,9 @@ namespace FTDIO_Object
     /// It is assume a pull-up resistor is at the FT232H pin and the switch connects it to ground.
     /// The button default state is enabled but as soon as a click is detected it gets disabled and the
     /// click event fires to avoid double clicks and triggering unwanted events.
-    /// This class uses a while loop and thread.sleep to data pool the pin where the switch is connected to.
+    /// This class uses a system.timer to data pool the pin where the switch is connected to.
     /// </summary>
-    class FTButton
+    class FTButtonTimer
     {
         FT232HDIO _dio;
         FT232HDIO.DIO_BUS _bus = FT232HDIO.DIO_BUS.AC_BUS;
@@ -31,13 +31,10 @@ namespace FTDIO_Object
         public delegate void ClickHandler(object sender);
         public event ClickHandler Click_Event;
 
-        public bool Enabled { get { return _enable; } set { _enable = value; } }
+        public bool Enabled { get { return _timer.Enabled; } set { this._timer.Enabled = value; } }
 
-        bool _enable = false;
-        int _sampling_ms = 150;
-
-        Task _task_monitor;
-        CancellationTokenSource _cancel_token = new CancellationTokenSource();
+        // Timer use to sample the state of the pin attached to the button
+        System.Timers.Timer _timer; 
 
         /// <summary>
         /// Constructor
@@ -45,57 +42,34 @@ namespace FTDIO_Object
         /// <param name="dio"></param>
         /// <param name="bus"></param>
         /// <param name="pin"></param>
-        public FTButton(FT232HDIO dio, FT232HDIO.DIO_BUS bus, FT232HDIO.PIN pin)
+        public FTButtonTimer(FT232HDIO dio, FT232HDIO.DIO_BUS bus, FT232HDIO.PIN pin)
         {
             _dio = dio;
             _bus = bus;
             _pin = pin;
 
+            _timer = new System.Timers.Timer(200.00);  // So the button most be held for 200ms max to detect a click
+            _timer.Elapsed += _timer_Elapsed;
             Enabled = true;
-
-            _task_monitor = new Task(() => monitor(_cancel_token.Token), _cancel_token.Token);
-            //_task_monitor.ContinueWith(pretest_done_handler, TaskContinuationOptions.OnlyOnRanToCompletion);
-            _task_monitor.ContinueWith(monitor_exception_handler, TaskContinuationOptions.OnlyOnFaulted);
-            _task_monitor.Start();
-
-            
         }
 
         /// <summary>
-        /// Loop used to monitor pin state
-        /// When pin is low the sampling is disabled and the click event fires
+        /// Timer event used to monitor pin state
+        /// When pin is low the timer is disabled and the click event fires
         /// </summary>
-        void monitor(CancellationToken cancel)
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void _timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            while (true)
+            bool value = get_button_state();
+            // Assume state is always high (pull up resistor) and
+            // button press sets it low (GND)
+            if (!value)
             {
-                if (cancel.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                if (Enabled)
-                {
-                    bool value = get_button_state();
-                    // Assume state is always high (pull up resistor) and
-                    // button press sets it low (GND)
-                    if (!value)
-                    {
-                        Enabled = false;
-                        fire_click();
-                    }
-                }
-                Thread.Sleep(_sampling_ms);
+                Enabled = false;
+                fire_click();
             }
         }
-
-        void monitor_exception_handler(Task task)
-        {
-            var exception = task.Exception;
-            string errmsg = exception.InnerException.Message;
-            throw new Exception(errmsg);
-        }
-
 
         /// <summary>
         /// Gets pin value

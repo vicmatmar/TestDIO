@@ -29,7 +29,7 @@ namespace DIOSquareTest
 
         bool _toggle = false;
 
-        FTDIO_Object.FTButton ftbutton;
+        FTButton ftbutton;
 
         public Form1()
         {
@@ -41,11 +41,10 @@ namespace DIOSquareTest
             {
                 throw new Exception("Unable to find an F232H device");
             }
-
             _ft232hdio.Open((uint)_ftdi_dev_index);
-
             ftbutton = new FTButton(_ft232hdio, FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
             ftbutton.Click_Event += ftbutton_Click_Event;
+            updategui();
 
         }
 
