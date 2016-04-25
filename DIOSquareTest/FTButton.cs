@@ -103,7 +103,7 @@ namespace FTDIO_Object
         /// <returns></returns>
         private bool get_button_state()
         {
-            bool value = _dio.ReadPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
+            bool value = _dio.ReadPin(_bus, _pin);
             return value;
         }
 

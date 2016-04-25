@@ -42,7 +42,7 @@ namespace DIOSquareTest
                 throw new Exception("Unable to find an F232H device");
             }
             _ft232hdio.Open((uint)_ftdi_dev_index);
-            ftbutton = new FTButton(_ft232hdio, FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0);
+            ftbutton = new FTButton(_ft232hdio, FT232HDIO.DIO_BUS.AD_BUS, FT232HDIO.PIN.PIN0);
             ftbutton.Click_Event += ftbutton_Click_Event;
             updategui();
 
@@ -70,18 +70,43 @@ namespace DIOSquareTest
                 if (ftbutton.Enabled)
                 {
                     label1.Text = "Watting on click.\r\nButton is enabled.\r\nLED is on";
-                    _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, true);
+
+                    Random ran = new Random();
+                    bool pass_fail = Convert.ToBoolean(ran.Next(2));
+                    turn_leds_pass_fail(pass_fail);
                     radioButton1.Checked = true;
                 }
                 else
                 {
                     label1.Text = "Something running.\r\nButton is disabled\r\nLED is off";
-                    _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, false);
+
+                    turn_leds(false);
                     radioButton1.Checked = false;
                 }
             }
         }
 
+        void turn_leds_pass_fail(bool pass_fail)
+        {
+            if (pass_fail)
+            {
+                _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0, true);
+                _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, true);
+            }
+            else
+            {
+                _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN1, true);
+                _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN3, true);
+            }
+        }
+
+        void turn_leds(bool state)
+        {
+            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN0, state);
+            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN1, state);
+            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, state);
+            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN3, state);
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -103,7 +128,7 @@ namespace DIOSquareTest
         private void toggleLED_Click(object sender, EventArgs e)
         {
             _toggle = !_toggle;
-            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN2, _toggle);
+            _ft232hdio.SetPin(FT232HDIO.DIO_BUS.AC_BUS, FT232HDIO.PIN.PIN1, _toggle);
 
         }
 
